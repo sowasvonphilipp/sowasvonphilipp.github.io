@@ -1,38 +1,44 @@
 <template>
-  <div class="header-logo">
-    <img
-      class="logo-img"
-      src="http://91.99.206.192/logo-modified.png"
-      alt="DeepAI Logo"
-      @click="goHome"
-    />
-    <div class="header-title-group" @click="goHome">
-      <div class="header-title-row">
-        <h1 class="header-title">DeepAI</h1>
-        <span class="badge">Beta</span>
-      </div>
-      <div class="slogan-text">
-        AI ohne Limits
-      </div>
+  <div class="header-logo-group" @click="goHome">
+    <div class="header-title-row">
+      <img
+        class="logo-img"
+        src="http://91.99.206.192/logo-modified.png"
+        alt="DeepAI Logo"
+      />
+      <h1 class="header-title">DeepAI</h1>
+      <span class="badge">Beta</span>
+      <span :class="['main-service-status', serviceStatus === 'operational' ? 'operational' : 'degraded']">
+        <template v-if="serviceStatus === 'operational'">
+          <svg class="status-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke="#4caf50" stroke-width="2" fill="#e8f5e9"/><path stroke="#4caf50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 12l2 2l4-4"/></svg>
+          <span class="status-text">All services operational</span>
+        </template>
+        <template v-else>
+          <svg class="status-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke="#ff9800" stroke-width="2" fill="#fff3e0"/><path stroke="#ff9800" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 12l2 2l4-4"/></svg>
+          <span class="status-text">Services degraded</span>
+        </template>
+      </span>
+    </div>
+    <div class="slogan-text">
+      AI ohne Limits
     </div>
   </div>
-  <div class="header-status-row">
-    <span :class="['service-status', serviceStatus === 'operational' ? 'operational' : 'degraded']">
-      <template v-if="serviceStatus === 'operational'">All services operational</template>
-      <template v-else>Services degraded</template>
-    </span>
-    <span v-if="notifications.length" class="notifications">
-      <span v-for="(note, idx) in notifications" :key="idx" class="notification">
-        {{ note }}
+  <div class="border-bottom header-background"></div>
+
+  <!-- Notifications and Announcements below the header -->
+  <div v-if="notifications.length" class="notifications notifications-header notifications-below">
+    <span v-for="(notif, idx) in notifications" :key="idx" class="notification" :style="{ background: notif.color || '#f7e017' }">
+      <span class="notif-icon">
+        <component :is="getHeroicon(notif.icon)" />
       </span>
+      <span>{{ notif.message }}</span>
     </span>
   </div>
-  <div v-if="announcements.length" class="announcements">
+  <div v-if="announcements.length" class="announcements announcements-below">
     <span v-for="(msg, idx) in announcements" :key="idx" class="announcement">
       {{ msg }}
     </span>
   </div>
-  <div class="border-bottom header-background"></div>
 
   <div class="buttons-header">
     <button
@@ -114,6 +120,23 @@
         </svg>
       </span>
     </button>
+    <button
+      class="chat-btn square"
+      aria-label="Chat"
+      @click="goChat"
+      style="margin-left:0;"
+    >
+      <span class="icon-wrapper">
+        <!-- Heroicons Chat Bubble Left Ellipsis (Outline) -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.25 12c0 3.728 3.64 6.75 8.125 6.75.98 0 1.93-.13 2.82-.37.37-.1.77-.02 1.06.22l2.12 1.77c.66.55 1.62-.07 1.44-.89l-.38-1.7c-.07-.32.04-.66.28-.88C20.36 15.98 21.75 14.13 21.75 12c0-3.728-3.64-6.75-8.125-6.75S2.25 8.272 2.25 12Z" />
+          <circle cx="9" cy="12" r="1" fill="currentColor"/>
+          <circle cx="12" cy="12" r="1" fill="currentColor"/>
+          <circle cx="15" cy="12" r="1" fill="currentColor"/>
+        </svg>
+        <span class="chat-text">Chat</span>
+      </span>
+    </button>
   </div>
 
   <!-- Example sidebar/menu -->
@@ -129,10 +152,12 @@
       </nav>
     </div>
   </transition>
+
+ 
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, h } from 'vue'
 const colorMode = useColorMode()
 const menuOpen = ref(false)
 
@@ -148,6 +173,9 @@ function goUeberUns() {
 function goPreise() {
   window.location.href = '/preise'
 }
+function goChat() {
+  window.location.href = '/chat'
+}
 function handleDarkModeClick() {
   colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
 }
@@ -155,21 +183,139 @@ function toggleMenu() {
   menuOpen.value = !menuOpen.value
 }
 
-// Service status: "operational" or "degraded"
 const serviceStatus = ref('operational')
+const notifications = ref([])
+const announcements = ref([])
 
-// Example notifications and announcements
-const notifications = ref([
-  'New feature released!',
-  'Scheduled maintenance on Jan 25.'
-])
-const announcements = ref([
-  'Welcome to DeepAI Beta.',
-  'Check out our new pricing plans!'
-])
+// Heroicons outline SVGs (minimal set, add more as needed)
+const icons = {
+  'wrench-screwdriver': () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', width: 20, height: 20 }, [
+    h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': 1.5, d: 'M15.232 5.232l3.536 3.536m-2.036-1.5l-2.036 2.036a2.5 2.5 0 01-3.536 0l-1.5-1.5a2.5 2.5 0 010-3.536l2.036-2.036m2.036 1.5l-2.036 2.036' })
+  ]),
+  'information-circle': () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', width: 20, height: 20 }, [
+    h('circle', { cx: 12, cy: 12, r: 10, stroke: '#0c89e3', 'stroke-width': 2, fill: '#e3f2fd' }),
+    h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': 2, stroke: '#0c89e3', d: 'M12 16v-4m0-4h.01' })
+  ]),
+  'exclamation-triangle': () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', width: 20, height: 20 }, [
+    h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': 2, stroke: '#ff9800', d: 'M12 9v2m0 4h.01M21 20H3a1 1 0 01-.894-1.447l9-16a1 1 0 011.788 0l9 16A1 1 0 0121 20z' })
+  ]),
+}
+function getHeroicon(name) {
+  return icons[name] || icons['information-circle']
+}
+
+onMounted(async () => {
+  try {
+    const res = await fetch('/components/notifications.json')
+    notifications.value = await res.json()
+  } catch (e) {
+    notifications.value = []
+  }
+  // Example: Announcements can be static or fetched
+  announcements.value = [
+    'Willkommen zu DeepAI Beta!',
+    'Checke die neuen Features und Preise!'
+  ]
+})
 </script>
 
 <style scoped>
+/* Main Service Status in Header */
+.main-service-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: #388e3c;
+  background: #e8f5e9;
+  border-radius: 8px;
+  padding: 2px 12px 2px 8px;
+  margin-left: 18px;
+  box-shadow: 0 1px 4px rgba(76,175,80,0.08);
+  transition: background 0.2s, color 0.2s;
+  height: 32px;
+}
+.main-service-status.degraded {
+  color: #e39c0c;
+  background: #fff3e0;
+  box-shadow: 0 1px 4px rgba(255,152,0,0.08);
+}
+.main-service-status .status-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 2px;
+}
+.main-service-status .status-text {
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+.notifications-header {
+  margin-top: 8px;
+  margin-left: 2px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.notifications-below {
+  margin: 0 auto;
+  margin-top: 12px;
+  margin-bottom: 0;
+  max-width: 900px;
+  justify-content: flex-start;
+  position: relative;
+  z-index: 1;
+}
+.notification {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 16px;
+  padding: 6px 14px 6px 10px;
+  font-size: 0.98rem;
+  font-weight: 500;
+  background: var(--notif-bg, #f7e017);
+  color: #232323;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+  min-width: 44px;
+  max-width: 320px;
+  transition: background 0.2s, color 0.2s;
+  word-break: break-word;
+}
+.notification .notif-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+}
+.announcements {
+  width: 100%;
+  padding: 8px 32px;
+  background: linear-gradient(90deg, #e3f2fd 0%, #e8f5e9 100%);
+  color: #0c89e3;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-top: 2px;
+  display: flex;
+  gap: 16px;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(12,137,227,0.08);
+  align-items: center;
+  min-height: 36px;
+}
+.announcements-below {
+  margin: 0 auto;
+  margin-top: 8px;
+  margin-bottom: 0;
+  max-width: 900px;
+  justify-content: flex-start;
+  position: relative;
+  z-index: 1;
+}
+.announcement {
+  padding: 2px 8px;
+  white-space: pre-line;
+}
 /* Über uns Button Styles */
 .ueberuns-btn {
   display: flex;
@@ -296,33 +442,41 @@ const announcements = ref([
   background-clip: text;
   color: transparent;
 }
-.header-logo {
+/* Header Logo Group (Logo + Title + Slogan) */
+.header-logo-group {
   display: flex;
-  align-items: center;
-  padding: 10px 20px;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px 20px 0 20px;
   background-color: #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   position: fixed;
   top: 0;
   width: 100%;
   z-index: 1000;
+  cursor: pointer;
+}
+.header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 .logo-img {
-  height: 65px;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  margin-left: 10px;
+  height: 48px;
+  margin: 0 8px 0 0;
   cursor: pointer;
 }
 .logo-img:hover {
   opacity: 0.8;
 }
-
-.header-title-group {
-  display: flex;
-  flex-direction: column;
-  margin-left: 20px;
-  cursor: pointer;
+.slogan-text {
+  font-size: 1rem;
+  color: #333;
+  margin-top: 2px;
+  margin-bottom: 0;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  margin-left: 56px;
 }
 .header-title-row {
   display: flex;
@@ -394,19 +548,22 @@ const announcements = ref([
 }
 .announcements {
   width: 100%;
-  padding: 4px 20px;
-  background: #e3f2fd;
+  padding: 8px 32px;
+  background: linear-gradient(90deg, #e3f2fd 0%, #e8f5e9 100%);
   color: #0c89e3;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 600;
   margin-top: 2px;
   display: flex;
   gap: 16px;
-  border-radius: 8px;
+  border-radius: 12px;
   box-shadow: 0 1px 4px rgba(12,137,227,0.08);
+  align-items: center;
+  min-height: 36px;
 }
 .announcement {
   padding: 2px 8px;
+  white-space: pre-line;
 }
 .dark .badge {
   background: #f7e017;
@@ -566,6 +723,70 @@ const announcements = ref([
 }
 .sidebar-fade-enter-from, .sidebar-fade-leave-to {
   opacity: 0;
+}
+
+/* Chat Button Styles */
+.chat-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0 18px 0 14px;
+  min-width: 110px;
+  height: 48px;
+  background: rgba(255,255,255,0.18);
+  border: 1.5px solid rgba(12,137,227,0.13);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: box-shadow 0.25s, transform 0.18s, background 0.25s, border 0.25s;
+  box-shadow: 0 2px 12px rgba(12,137,227,0.10);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(4px);
+}
+.chat-btn .icon-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chat-btn .icon {
+  width: 22px;
+  height: 22px;
+  stroke: #0c89e3;
+  transition: stroke 0.3s, filter 0.3s, transform 0.2s;
+  filter: drop-shadow(0 1px 2px rgba(12,137,227,0.10));
+}
+.chat-btn .chat-text {
+  font-size: 1rem;
+  background: linear-gradient(90deg, hsl(127, 93%, 42%), #0c89e3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.chat-btn:hover {
+  background: rgba(12, 137, 227, 0.13);
+  box-shadow: 0 4px 24px rgba(12,137,227,0.18);
+  border: 1.5px solid #0c89e3;
+  transform: scale(1.10) rotate(-4deg);
+}
+.chat-btn:active {
+  background: rgba(12, 137, 227, 0.18);
+  transform: scale(0.96) rotate(2deg);
+}
+.dark .chat-btn .icon {
+  stroke: #f7e017;
+  filter: drop-shadow(0 1px 4px rgba(247,224,23,0.15));
+}
+.dark .chat-btn .chat-text {
+  background: linear-gradient(90deg, #f7e017, #0c89e3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
 }
 </style>
 
