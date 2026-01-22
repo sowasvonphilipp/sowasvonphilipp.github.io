@@ -1,7 +1,8 @@
 [build]
-  command = "cd playground && pnpm install && pnpm run build"
-  publish = "playground/.output/public"
+  base = "playground"
+  command = "pnpm run build"
+  publish = ".output/public"
 
 [build.environment]
   NODE_VERSION = "20"
-  NPM_FLAGS = "--version"
+  PNPM_FLAGS = "--shamefully-hoist"
