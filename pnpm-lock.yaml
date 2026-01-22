@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@dataconnect/generated':
+        specifier: file:src/dataconnect-generated
+        version: file:src/dataconnect-generated(firebase@12.8.0)
       '@heroicons/vue':
         specifier: ^2.2.0
         version: 2.2.0(vue@3.5.27(typescript@5.9.3))
@@ -81,6 +84,15 @@ importers:
       vue-tsc:
         specifier: ^3.2.2
         version: 3.2.2(typescript@5.9.3)
+
+  playground:
+    dependencies:
+      my-module:
+        specifier: latest
+        version: 1.0.0
+      nuxt:
+        specifier: ^4.2.2
+        version: 4.2.2(@parcel/watcher@2.5.4)(@types/node@25.0.10)(@vue/compiler-sfc@3.5.27)(better-sqlite3@12.6.2)(cac@6.7.14)(db0@0.3.4(better-sqlite3@12.6.2))(eslint@9.39.2(jiti@2.6.1))(ioredis@5.9.2)(lightningcss@1.31.1)(magicast@0.5.1)(optionator@0.9.4)(rollup@4.56.0)(terser@5.46.0)(typescript@5.9.3)(vite@7.3.1(@types/node@25.0.10)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(yaml@2.8.2))(vue-tsc@3.2.2(typescript@5.9.3))(yaml@2.8.2)
 
 packages:
 
@@ -246,6 +258,12 @@ packages:
   '@cloudflare/kv-asset-handler@0.4.2':
     resolution: {integrity: sha512-SIOD2DxrRRwQ+jgzlXCqoEFiKOFqaPjhnNTGKXSRLvp1HiOvapLaFG2kEr9dYQTYe8rKrd9uvDUzmAITeNyaHQ==}
     engines: {node: '>=18.0.0'}
+
+  '@dataconnect/generated@file:src/dataconnect-generated':
+    resolution: {directory: src/dataconnect-generated, type: directory}
+    engines: {node: ' >=18.0'}
+    peerDependencies:
+      firebase: ^10.14.0 || ^11.3.0 || ^12.0.0
 
   '@dxup/nuxt@0.2.2':
     resolution: {integrity: sha512-RNpJjDZs9+JcT9N87AnOuHsNM75DEd58itADNd/s1LIF6BZbTLZV0xxilJZb55lntn4TYvscTaXLCBX2fq9CXg==}
@@ -4903,6 +4921,9 @@ packages:
   muggle-string@0.4.1:
     resolution: {integrity: sha512-VNTrAak/KhO2i8dqqnqnAHOa3cYBwXEZe9h+D5h/1ZqFSTEFHdM65lR7RoIqq3tBBYavsOXV84NoHXZ0AkPyqQ==}
 
+  my-module@1.0.0:
+    resolution: {integrity: sha512-HVXnQnmqCsGAbflaM8qvKqI6F2U1LMW8ivjWXGqqOa/5hDZrH0+Vv8JFCcEJ5c8ZrHFm/zS6o/4kVrOfxky+4g==}
+
   nanoid@3.3.11:
     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
@@ -6909,6 +6930,10 @@ snapshots:
       sisteransi: 1.0.5
 
   '@cloudflare/kv-asset-handler@0.4.2': {}
+
+  '@dataconnect/generated@file:src/dataconnect-generated(firebase@12.8.0)':
+    dependencies:
+      firebase: 12.8.0
 
   '@dxup/nuxt@0.2.2(magicast@0.5.1)':
     dependencies:
@@ -12283,6 +12308,8 @@ snapshots:
   ms@2.1.3: {}
 
   muggle-string@0.4.1: {}
+
+  my-module@1.0.0: {}
 
   nanoid@3.3.11: {}
 
