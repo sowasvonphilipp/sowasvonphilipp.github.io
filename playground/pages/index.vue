@@ -1,5 +1,6 @@
 <template>
   <div :class="['page-bg', $colorMode && $colorMode.value === 'dark' ? 'dark' : 'light']">
+    <h1 class="visually-hidden">{{ page_title }}</h1>
     <section class="hero-section">
       <div class="hero-bg"></div>
       <div class="hero-content">
@@ -73,35 +74,63 @@
 
     <div class="Limits-section">
       <div class="limits-frame animated-pop">
-        <h2 class="vergleich-title">Keine Limits mit DeepAI*</h2>
-        <p class="sub-title limits-visible">* Illegale oder rechtswidrige Inhalte müssen laut Gesetz blockiert werden.</p>
-        <h3 class="sub-title limits-visible">Erlebe die Freiheit, die DeepAI bietet, ohne Einschränkungen.</h3>
-        <h3 class="subtitle limits-visible">Unendlich viele Anfragen und Bilder</h3>
-        <div class="nolimit-badge">NO LIMITS</div>
+        <h2 class="vergleich-title limits-title-contrast">Grenzenlose Möglichkeiten mit DeepAI</h2>
+        <p class="sub-title limits-visible">* Gesetzlich verbotene Inhalte sind selbstverständlich ausgeschlossen.</p>
+        <h3 class="sub-title limits-visible">Nutze DeepAI ohne künstliche Limits – für deine Kreativität, Projekte und Ideen.</h3>
+        <h3 class="subtitle limits-visible">Unbegrenzte Anfragen. Unbegrenzte Bilder. Unbegrenzte Power.</h3>
+        <div class="nolimit-badge">KEINE LIMITS</div>
       </div>
     </div>
 
     <div class="starte-now-section">
       <div class="starte-frame animated-pop">
-        <h2 class="vergleich-title">Starte jetzt mit DeepAI!</h2>
-        <p class="sub-title starte-visible">Erstelle jetzt deinen Account und fange an mit DeepAI.</p>
-        <NuxtLink to="/account" class="start-btn animated-bounce">Jetzt Registrieren</NuxtLink>
+      <h2 class="vergleich-title limits-title-contrast">Bereit, loszulegen?</h2>
+      <p class="sub-title starte-visible">Erstelle in wenigen Sekunden deinen kostenlosen Account und entdecke, was DeepAI für dich tun kann.</p>
+      <NuxtLink to="/account" class="start-btn improved-btn animated-bounce">
+        <span class="btn-icon">🚀</span>
+        <span>Jetzt DeepAI erleben</span>
+      </NuxtLink>
       </div>
     </div>
-  </div>
-</template>
+    </div>
+  </template>
 
-<script setup>
-const vorteile = [
+  <script setup>
+  const page_title = 'DeepAI - Homepage'
+  const vorteile = [
   { icon: '🚀', title: 'Schneller Zugriff:', text: 'Greife per Webapp oder der Website auf unsere AI zu.' },
   { icon: '💡', title: 'Speziel Angepasst:', text: 'Unsere KI-Modelle sind speziell auf deine Bedürfnisse zugeschnitten.' },
   { icon: '🔒', title: 'Datenschutz:', text: 'Deine Daten werden sicher verarbeitet und nicht weiterverkauft.' },
   { icon: '⚙️', title: 'Support:', text: 'Erhalte schnellen und zuverlässigen Support bei Fragen und Problemen.' },
   { icon: '🌐', title: 'Zugänglich überall:', text: 'Nutze DeepAI von jedem Gerät mit Internetzugang.' },
 ];
+
+  definePageMeta({
+    title: 'DeepAI - AI ohne Limits',
+    meta: [
+      {
+        name: 'description',
+        content: 'Entdecke DeepAI - die AI-Plattform ohne Limits. Nutze unsere KI-Dienste schnell, sicher und überall.',
+      },
+    ],
+  })
 </script>
 
-<style scoped>
+<style>
+:root {
+  /* ...existing code... */
+}
+
+.visually-hidden {
+  position: absolute !important;
+  height: 1px; width: 1px;
+  overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px);
+  white-space: nowrap;
+  border: 0;
+  padding: 0;
+  margin: -1px;
+}
 :root {
   --deepai-blue: #0c89e3;
   --deepai-yellow: #f7e017;
@@ -122,36 +151,50 @@ const vorteile = [
   --deepai-border: var(--deepai-border-light);
 }
 
-.dark {
-  --deepai-bg: var(--deepai-bg-dark);
-  --deepai-text: var(--deepai-text-dark);
-  --deepai-card: var(--deepai-card-dark);
-  --deepai-border: var(--deepai-border-dark);
+.start-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(90deg, #0c89e3 0%, #f7e017 100%);
+  color: #fff;
+  font-weight: 900;
+  font-size: 1.18rem;
+  padding: 17px 38px;
+  border-radius: 32px;
+  box-shadow: 0 4px 24px rgba(12,137,227,0.13);
+  text-decoration: none;
+  margin: 32px 0 24px 0;
+  transition: transform 0.18s, box-shadow 0.18s, background 0.18s, filter 0.18s;
+  letter-spacing: 0.04em;
+  filter: brightness(1);
+  border: none;
+  cursor: pointer;
 }
-
-.page-bg {
-  min-height: 100vh;
-  width: 100vw;
-  background: var(--deepai-bg);
-  transition: background 0.5s;
+.improved-btn {
+  background: linear-gradient(90deg, #0c89e3 0%, #f7e017 100%);
+  color: #fff;
+  font-weight: 900;
+  font-size: 1.18rem;
+  box-shadow: 0 6px 32px rgba(12,137,227,0.18);
+  border: none;
+  outline: none;
 }
-.page-bg.light {
-  --deepai-bg: #fff;
+.start-btn:hover, .improved-btn:hover {
+  transform: scale(1.10) rotate(-2deg);
+  box-shadow: 0 10px 36px rgba(12,137,227,0.22);
+  background: linear-gradient(90deg, #f7e017 0%, #0c89e3 100%);
+  filter: brightness(1.10) drop-shadow(0 2px 12px #0c89e3aa);
 }
-.page-bg.dark {
-  --deepai-bg: #181c20;
-}
-
-.hero-section, .Limits-section, .starte-now-section {
-  background: transparent;
+.btn-icon {
+  font-size: 1.5em;
+  margin-right: 2px;
+  filter: drop-shadow(0 2px 4px #0c89e3aa);
 }
 
 .animated-fadein {
-  opacity: 0;
   animation: fadeIn 1.2s forwards;
 }
 .animated-slidein {
-  opacity: 0;
   animation: slideIn 1.2s forwards;
 }
 .animated-bounce {
@@ -248,6 +291,7 @@ const vorteile = [
 .starte-frame .sub-title {
   background: none;
   -webkit-background-clip: unset;
+  background-clip: unset;
   color: var(--deepai-text, #0c89e3);
   margin: 0;
   padding: 18px 32px 0 32px;
@@ -261,6 +305,7 @@ const vorteile = [
   color: var(--deepai-text, #222) !important;
   background: none !important;
   -webkit-background-clip: unset !important;
+  background-clip: unset !important;
   -webkit-text-fill-color: unset !important;
 }
 .hero-section {
@@ -366,12 +411,23 @@ const vorteile = [
 .vergleich-title {
   font-size: 1.5rem;
   font-weight: 700;
-  background: linear-gradient(90deg, #0c89e3 0%, #f7e017 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
   margin-bottom: 18px;
+}
+.limits-title-contrast {
+  color: #0c89e3 !important;
+  background: none !important;
+  text-shadow: 0 2px 8px #fff, 0 1px 0 #f7e017;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: unset !important;
+  background-clip: unset !important;
+}
+.dark .limits-title-contrast {
+  color: #f7e017 !important;
+  background: none !important;
+  text-shadow: 0 2px 8px #23272e, 0 1px 0 #0c89e3;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: unset !important;
+  background-clip: unset !important;
 }
 .vergleich-table-wrapper {
   overflow-x: auto;
@@ -475,6 +531,7 @@ const vorteile = [
 .limits-frame .subtitle {
   background: none;
   -webkit-background-clip: unset;
+  background-clip: unset;
   color: #0c89e3;
   margin: 0;
   padding: 18px 32px 0 32px;

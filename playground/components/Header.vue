@@ -9,13 +9,13 @@
       <h1 class="header-title">DeepAI</h1>
       <span class="badge">Beta</span>
       <span :class="['main-service-status', serviceStatus === 'operational' ? 'operational' : 'degraded']">
-        <template v-if="serviceStatus === 'operational'">
+        <template v-if="serviceStatus === 'Beta verfügbar'">
           <svg class="status-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke="#4caf50" stroke-width="2" fill="#e8f5e9"/><path stroke="#4caf50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 12l2 2l4-4"/></svg>
           <span class="status-text">All services operational</span>
         </template>
         <template v-else>
-          <svg class="status-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke="#ff9800" stroke-width="2" fill="#fff3e0"/><path stroke="#ff9800" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 12l2 2l4-4"/></svg>
-          <span class="status-text">Services degraded</span>
+          <svg class="status-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10" stroke="#4caf50" stroke-width="2" fill="#e8f5e9"/><path stroke="#4caf50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 12l2 2l4-4"/></svg>
+          <span class="status-text">Beta verfügbar</span>
         </template>
       </span>
     </div>

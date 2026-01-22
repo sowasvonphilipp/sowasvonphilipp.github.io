@@ -1,0 +1,28 @@
+type User @table {
+  username: String!
+  email: String!
+  passwordHash: String!
+  createdAt: Timestamp!
+  displayName: String
+}
+
+type ActivationCode @table {
+  code: String!
+  createdAt: Timestamp!
+  activatedAt: Timestamp
+  user: User
+}
+
+type AIInstance @table {
+  user: User!
+  activatedAt: Timestamp!
+  modelVersion: String!
+}
+
+type Interaction @table {
+  user: User!
+  aiInstance: AIInstance!
+  prompt: String!
+  response: String!
+  timestamp: Timestamp!
+}

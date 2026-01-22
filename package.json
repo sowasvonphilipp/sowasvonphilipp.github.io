@@ -37,6 +37,8 @@
     "test:types": "vue-tsc --noEmit && cd playground && vue-tsc --noEmit"
   },
   "dependencies": {
+    "@dataconnect/generated": "file:src/dataconnect-generated",
+    "@heroicons/vue": "^2.2.0",
     "@nuxt/kit": "^4.2.2",
     "better-sqlite3": "^12.6.2",
     "firebase": "^12.8.0"

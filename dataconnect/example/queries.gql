@@ -1,0 +1,38 @@
+mutation CreateUserMutation($email: String!, $username: String!, $passwordHash: String!) @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  user_insert(data: {
+    email: $email,
+    username: $username,
+    passwordHash: $passwordHash,
+    createdAt_expr: "request.time"
+  })
+}
+
+query GetUserByEmail($email: String!) @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  users(where: {email: {eq: $email}}) {
+    id
+    username
+    email
+    createdAt
+    displayName
+  }
+}
+
+mutation CreateInteraction($aiInstanceId: UUID!, $prompt: String!, $response: String!) @auth(level: USER) {
+  interaction_insert(data: {
+    aiInstanceId: $aiInstanceId,
+    userId_expr: "auth.uid",
+    prompt: $prompt,
+    response: $response,
+    timestamp_expr: "request.time"
+  })
+}
+
+query GetMyInteractions @auth(level: USER) {
+  interactions(where: {userId: {eq_expr: "auth.uid"}}) {
+    id
+    aiInstanceId
+    prompt
+    response
+    timestamp
+  }
+}
