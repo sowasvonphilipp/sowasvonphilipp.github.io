@@ -8,6 +8,7 @@
     "generate": "nuxt generate"
   },
   "dependencies": {
+    "@heroicons/vue": "^2.2.0",
     "my-module": "latest",
     "nuxt": "^4.2.2"
   }
