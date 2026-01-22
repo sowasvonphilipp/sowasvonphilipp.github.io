@@ -1,11 +1,8 @@
 [build]
-  # Wir installieren ALLES vom Hauptverzeichnis aus
-  command = "pnpm install && pnpm --filter playground run build"
-  # Der Pfad vom Hauptverzeichnis aus gesehen
+  # Wir geben uns mit 'ls' genau aus, was erzeugt wurde, um den Fehler zu finden
+  command = "pnpm install && pnpm --filter playground run build && ls -R playground/.output"
   publish = "playground/.output/public"
 
 [build.environment]
   NODE_VERSION = "20"
-  PNPM_VERSION = "10.18.1"
-  # Verhindert, dass der Build bei Warnungen abbricht
-  NPM_CONFIG_SURE = "true"
+  PNPM_FLAGS = "--shamefully-hoist"
