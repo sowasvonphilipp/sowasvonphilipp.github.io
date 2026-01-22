@@ -1,51 +1,4 @@
-.tos-row {
-  margin: 10px 0 0 0;
-  font-size: 0.98rem;
-  color: #23272e;
-  display: flex;
-  align-items: center;
-}
-.tos-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.tos-checkbox {
-  margin-right: 8px;
-}
-.mfa-status {
-  display: inline-block;
-  margin-left: 10px;
-  font-weight: 800;
-  padding: 2px 10px;
-  border-radius: 8px;
-  font-size: 0.98rem;
-}
-.mfa-on {
-  background: #22c55e22;
-  color: #22c55e;
-  border: 1.5px solid #22c55e;
-}
-.mfa-off {
-  background: #ef444422;
-  color: #ef4444;
-  border: 1.5px solid #ef4444;
-}
-.profile-pic-preview {
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-left: 12px;
-  box-shadow: 0 2px 8px #0c89e322;
-  border: 2px solid #0c89e3;
-}
-.profile-card {
-  margin-top: 18px;
-}
-.code-card {
-  margin-top: 18px;
-}
+
 <template>
   <div class="account-bg">
     <div class="account-container">
@@ -809,6 +762,54 @@ const handleLogout = async () => {
   margin-right: 8px;
   vertical-align: middle;
   color: #0c89e3;
+}
+.tos-row {
+  margin: 10px 0 0 0;
+  font-size: 0.98rem;
+  color: #23272e;
+  display: flex;
+  align-items: center;
+}
+.tos-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tos-checkbox {
+  margin-right: 8px;
+}
+.mfa-status {
+  display: inline-block;
+  margin-left: 10px;
+  font-weight: 800;
+  padding: 2px 10px;
+  border-radius: 8px;
+  font-size: 0.98rem;
+}
+.mfa-on {
+  background: #22c55e22;
+  color: #22c55e;
+  border: 1.5px solid #22c55e;
+}
+.mfa-off {
+  background: #ef444422;
+  color: #ef4444;
+  border: 1.5px solid #ef4444;
+}
+.profile-pic-preview {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-left: 12px;
+  box-shadow: 0 2px 8px #0c89e322;
+  border: 2px solid #0c89e3;
+}
+.profile-card {
+  margin-top: 18px;
+}
+.code-card {
+  margin-top: 18px;
 }
 .account-bg {
   min-height: 100vh;

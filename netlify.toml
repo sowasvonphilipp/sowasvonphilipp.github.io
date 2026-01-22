@@ -1,0 +1,3 @@
+[build]
+  command = "pnpm --filter playground run build"
+  publish = "playground/dist"
