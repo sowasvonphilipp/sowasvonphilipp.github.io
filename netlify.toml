@@ -1,6 +1,10 @@
 [build]
-  command = "pnpm --filter playground run build"
-  publish = "playground/.output/public"
+  # Netlify wechselt automatisch in diesen Ordner
+  base = "playground"
+  # Befehl wird RELATIV zum base-ordner ausgeführt
+  command = "pnpm run build"
+  # Pfad RELATIV zum base-ordner
+  publish = ".output/public"
 
 [build.environment]
   NODE_VERSION = "20"
