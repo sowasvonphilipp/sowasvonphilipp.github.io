@@ -1,9 +1,11 @@
 [build]
-  # Wir gehen manuell in den Ordner und bauen dort
-  command = "cd playground && pnpm install && pnpm run build"
+  # Wir installieren ALLES vom Hauptverzeichnis aus
+  command = "pnpm install && pnpm --filter playground run build"
   # Der Pfad vom Hauptverzeichnis aus gesehen
   publish = "playground/.output/public"
 
 [build.environment]
   NODE_VERSION = "20"
-  PNPM_FLAGS = "--shamefully-hoist"
+  PNPM_VERSION = "10.18.1"
+  # Verhindert, dass der Build bei Warnungen abbricht
+  NPM_CONFIG_SURE = "true"
