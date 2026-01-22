@@ -1,7 +1,9 @@
 [build]
-  base = "playground"
-  command = "pnpm run build"
-  publish = ".output/public"
+  # Wir gehen manuell in den Ordner und bauen dort
+  command = "cd playground && pnpm install && pnpm run build"
+  # Der Pfad vom Hauptverzeichnis aus gesehen
+  publish = "playground/.output/public"
 
 [build.environment]
   NODE_VERSION = "20"
+  PNPM_FLAGS = "--shamefully-hoist"
