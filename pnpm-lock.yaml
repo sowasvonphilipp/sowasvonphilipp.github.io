@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@dataconnect/generated':
+        specifier: file:src/dataconnect-generated
+        version: file:src/dataconnect-generated(firebase@12.8.0)
       '@heroicons/vue':
         specifier: ^2.2.0
         version: 2.2.0(vue@3.5.27(typescript@5.9.3))
@@ -246,6 +249,12 @@ packages:
   '@cloudflare/kv-asset-handler@0.4.2':
     resolution: {integrity: sha512-SIOD2DxrRRwQ+jgzlXCqoEFiKOFqaPjhnNTGKXSRLvp1HiOvapLaFG2kEr9dYQTYe8rKrd9uvDUzmAITeNyaHQ==}
     engines: {node: '>=18.0.0'}
+
+  '@dataconnect/generated@file:src/dataconnect-generated':
+    resolution: {directory: src/dataconnect-generated, type: directory}
+    engines: {node: ' >=18.0'}
+    peerDependencies:
+      firebase: ^10.14.0 || ^11.3.0 || ^12.0.0
 
   '@dxup/nuxt@0.2.2':
     resolution: {integrity: sha512-RNpJjDZs9+JcT9N87AnOuHsNM75DEd58itADNd/s1LIF6BZbTLZV0xxilJZb55lntn4TYvscTaXLCBX2fq9CXg==}
@@ -6909,6 +6918,10 @@ snapshots:
       sisteransi: 1.0.5
 
   '@cloudflare/kv-asset-handler@0.4.2': {}
+
+  '@dataconnect/generated@file:src/dataconnect-generated(firebase@12.8.0)':
+    dependencies:
+      firebase: 12.8.0
 
   '@dxup/nuxt@0.2.2(magicast@0.5.1)':
     dependencies:
