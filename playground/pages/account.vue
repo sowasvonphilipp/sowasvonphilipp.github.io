@@ -1,6 +1,10 @@
 <script setup>
 // --- Firestore integration and userProfile logic ---
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  getFirestore, collection, query, onSnapshot, orderBy,
+  addDoc, serverTimestamp, doc, updateDoc, getDocs, limit,
+  setDoc, getDoc // <-- add these
+} from 'firebase/firestore';
 import { ref, onMounted, watch, onUnmounted, computed } from 'vue';
 import { ExclamationTriangleIcon, ShieldCheckIcon, Cog6ToothIcon, HomeIcon, ArrowLeftOnRectangleIcon, UserIcon } from '@heroicons/vue/24/outline';
 import { initializeApp, getApps } from 'firebase/app';
@@ -442,7 +446,6 @@ const sidebarItems = [
   { key: 'account', label: 'Account', icon: UserIcon },
 
   { key: 'benachrichtigungen', label: 'Benachrichtigungen', icon: GlockIcon },
-  { key: 'settings', label: 'Einstellungen', icon: Cog6ToothIcon },
   { key: 'logout', label: 'Abmelden', icon: ArrowLeftOnRectangleIcon }
 ];
 const activeSidebar = ref('dashboard');
@@ -475,7 +478,80 @@ let pwResetInterval = null;
 const PW_RESET_COOLDOWN = 600; // 10 minutes in seconds
 const showPassword = ref(false);
 const passwordRevealError = ref("");
+// WICHTIG: Stelle sicher, dass der Pfad zu deiner firebaseConfig stimmt!
+// import { db, auth } from '@/plugins/firebase'; 
 
+
+
+// Falls du activeSidebar von außen als Prop bekommst oder global nutzt:
+const props = defineProps(['activeSidebar']); 
+
+const notifications = ref([]);
+const currentUserId = ref(null);
+let unsubscribe = null;
+
+
+
+const formatTime = (ts) => {
+  if (!ts || !ts.toDate) return 'Gerade eben';
+  return ts.toDate().toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' });
+};
+
+const markAsRead = async (notificationId) => {
+  try {
+    const path = `benachrichtigungen/${currentUserId.value}/user_benachrichtigungen/${notificationId}`;
+    await updateDoc(doc(db, path), { read: true });
+  } catch (e) {
+    console.error("Fehler beim Markieren:", e);
+  }
+};
+
+const listenToNotifications = (userId) => {
+  const path = `benachrichtigungen/${userId}/user_benachrichtigungen`;
+  const q = query(collection(db, path), orderBy('createdAt', 'desc'));
+
+  unsubscribe = onSnapshot(q, (snapshot) => {
+    notifications.value = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  }, (error) => {
+    console.error("Firebase Snapshot Fehler:", error);
+  });
+};
+
+onMounted(() => {
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUserId.value = user.uid;
+      // Erst prüfen ob Willkommens-Nachricht nötig
+      const path = `benachrichtigungen/${user.uid}/user_benachrichtigungen`;
+      const snap = await getDocs(query(collection(db, path), limit(1)));
+      
+      if (snap.empty) {
+        await addDoc(collection(db, path), {
+          icon: '🎉', author: 'System', title: 'Willkommen zu deinem Account!',
+          message: '{username} herzlich willkommen bei DeepAI! Dein Account ist startklar.', footer: 'DeepAI Team',
+          createdAt: serverTimestamp(), read: false
+        });
+      }
+      listenToNotifications(user.uid);
+    }
+  });
+});
+
+onUnmounted(() => { if (unsubscribe) unsubscribe(); });
+
+onMounted(() => {
+  // Ersetze 'USER_ABC_123' mit der ID des aktuell eingeloggten Users
+  if (currentUserId.value) {
+    listenToNotifications(currentUserId.value);
+  }
+});
+
+onUnmounted(() => {
+  if (unsubscribe) unsubscribe();
+});
 function getPwResetCooldownLeft() {
   const last = localStorage.getItem('pwResetLast');
   if (last) {
@@ -748,6 +824,20 @@ function getAuthErrorMessage(error) {
 const showPasswordModal = ref(false)
 const show2FAModal = ref(false)
 
+const sidebarMobileOpen = ref(false);
+const isDesktop = ref(true);
+
+function handleResize() {
+  isDesktop.value = window.innerWidth >= 900;
+  if (isDesktop.value) sidebarMobileOpen.value = false;
+}
+onMounted(() => {
+  handleResize();
+  window.addEventListener('resize', handleResize);
+});
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
 </script>
 <style scoped>
   .badge-chip {
@@ -833,26 +923,26 @@ const show2FAModal = ref(false)
     }
 
 <template>
-    <div v-if="showErrorPopup" class="global-error-popup">
-      <div class="global-error-content">
+  <div v-if="showErrorPopup" class="global-error-popup">
+    <div class="global-error-content">
+      <ExclamationTriangleIcon class="error-icon" />
+      <span>{{ globalErrorMsg }}</span>
+      <button class="close-error-btn" @click="showErrorPopup=false">×</button>
+    </div>
+  </div>
+  <div v-if="accountSuspended" class="suspended-modal-overlay">
+    <div class="suspended-modal-card">
+      <div class="suspended-modal-title">
         <ExclamationTriangleIcon class="error-icon" />
-        <span>{{ globalErrorMsg }}</span>
-        <button class="close-error-btn" @click="showErrorPopup=false">×</button>
+        Account gesperrt
       </div>
-    </div>
-    <div v-if="accountSuspended" class="suspended-modal-overlay">
-      <div class="suspended-modal-card">
-        <div class="suspended-modal-title">
-          <ExclamationTriangleIcon class="error-icon" />
-          Account gesperrt
-        </div>
-        <div class="suspended-modal-content">
-          Dein Account wurde vorübergehend gesperrt.<br>Bitte kontaktiere den Support für weitere Informationen.<br>
-          <span v-if="showSuspendedCloseError" class="suspended-close-error"><ExclamationTriangleIcon class="error-icon" /> Du kannst dieses Fenster nicht schließen.</span>
-        </div>
-        <button class="modal-btn cancel" @click="onTryCloseSuspended">Schließen</button>
+      <div class="suspended-modal-content">
+        Dein Account wurde vorübergehend gesperrt.<br>Bitte kontaktiere den Support für weitere Informationen.<br>
+        <span v-if="showSuspendedCloseError" class="suspended-close-error"><ExclamationTriangleIcon class="error-icon" /> Du kannst dieses Fenster nicht schließen.</span>
       </div>
+      <button class="modal-btn cancel" @click="onTryCloseSuspended">Schließen</button>
     </div>
+  </div>
   <div class="account-bg">
     <div class="account-container-wide">
       <div class="account-title-bar">
@@ -921,24 +1011,23 @@ const show2FAModal = ref(false)
         </div>
       </div>
       <div v-else class="account-main-full">
-        <aside class="sidebar-nav">
+        <!-- Responsive Sidebar -->
+        <nav :class="['sidebar-nav', { 'sidebar-mobile': sidebarMobileOpen }]" v-if="!sidebarMobileOpen || isDesktop">
           <div class="sidebar-title">Navigation</div>
           <ul class="sidebar-list">
-            <li v-for="item in sidebarItems" :key="item.key" :class="{active: activeSidebar===item.key}" @click="activeSidebar=item.key">
+            <li v-for="item in sidebarItems" :key="item.key" :class="{active: activeSidebar===item.key}" @click="() => { activeSidebar = item.key; if (!isDesktop) sidebarMobileOpen = false; }">
               <span class="sidebar-icon"><component :is="item.icon" /></span>
               <span>{{ item.label }}</span>
             </li>
           </ul>
-        </aside>
+        </nav>
+        <!-- Hamburger for mobile -->
+        <button class="sidebar-toggle" @click="sidebarMobileOpen = !sidebarMobileOpen" v-if="!isDesktop">
+          <span :class="sidebarMobileOpen ? 'open' : ''">☰</span>
+        </button>
         <div class="account-content-full">
-          <div class="user-info-card">
-    <div class="user-avatar-lg">{{ userEmail.charAt(0).toUpperCase() }}</div>
-    <div>
-      <div class="user-email-main">{{ userEmail }}</div>
-    </div>
-  </div>
-
-  <div v-if="activeSidebar === 'dashboard'">
+          <!-- Only one tab content visible at a time -->
+          <div v-if="activeSidebar === 'dashboard'">
     <div class="willkommen-text">
       <h2>Willkommen, {{ userEmail }}</h2>
       <p>Hier findest du die wichtigsten Informationen zu deinem Konto.</p>
@@ -965,6 +1054,7 @@ const show2FAModal = ref(false)
 
 
 
+<div v-if="activeSidebar === 'account'">
   <div class="nickname-container" style="display: flex; flex-direction: column; align-items: center; gap: 18px; margin: 32px auto 0 auto; max-width: 420px; background: #fff; border-radius: 18px; box-shadow: 0 2px 12px #0c89e322; padding: 32px 24px;">
     <p>
       Dein Anzeigename: <strong>{{ userProfile?.displayName || 'Nicht gesetzt' }}</strong>
@@ -1130,15 +1220,50 @@ const show2FAModal = ref(false)
       <h2>Account löschen</h2>
       <p>Bitte kontaktiere einen Systemadministrator, um deinen Account zu löschen.</p>
     </div>
+</div>
 
 
   <div v-if="activeSidebar === 'benachrichtigungen'" class="account-notifications-section">
-    <div class="willkommen-text">
-      <h2>Benachrichtigungen</h2>
-      <p>Hier erscheinen in Zukunft deine Benachrichtigungen.</p>
-      <button class="logout-btn" @click="logout">Abmelden</button>
+    <div class="notifications-header">
+      <h2><span class="notifications-main-icon">🔔</span> Benachrichtigungen</h2>
+      <p class="notifications-subtitle">Alle wichtigen Infos & Updates zu deinem Account.</p>
+      <div class="notifications-stats">
+        <span>Gesamt: <b>{{ notifications.length }}</b></span>
+        <span v-if="notifications.length">| Ungelesen: <b>{{ notifications.filter(n => !n.read).length }}</b></span>
+      </div>
+    </div>
+    <div class="benachrichtigungen-container">
+      <p v-if="!notifications.length" class="notifications-empty">
+        <span class="notifications-empty-icon">📭</span>
+        Du hast derzeit keine Benachrichtigungen.
+      </p>
+      <div v-else>
+        <div
+          v-for="n in notifications"
+          :key="n.id"
+          class="notification-card"
+          :class="{ read: n.read }"
+        >
+          <div class="notification-card-header">
+            <span class="notification-icon">{{ n.icon || '🔔' }}</span>
+            <div class="notification-title-row">
+              <span class="notification-title">{{ n.title }}</span>
+              <span v-if="!n.read" class="notification-unread-badge">Neu</span>
+            </div>
+          </div>
+          <div class="notification-date">
+            {{ n.createdAt && n.createdAt.toDate ? n.createdAt.toDate().toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' }) : '' }}
+          </div>
+          <div class="notification-message">{{ n.message }}</div>
+          <div class="notification-meta">
+            <span class="notification-author">Von: <b>{{ n.author }}</b></span>
+            <span class="notification-footer">{{ n.footer }}</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
+</div>
 
   <div class="modal-container">
     <PasswordChangeModal
@@ -1155,7 +1280,6 @@ const show2FAModal = ref(false)
 </div>
       </div>
     </div>
-  </div>
 </template>
 
 
@@ -1290,7 +1414,7 @@ const show2FAModal = ref(false)
       padding: 0;
     }
     .account-container-wide {
-      width: 85vw;
+      width: 95vw;
       max-width: 1400px;
       min-height: 80vh;
       margin: 4vh auto;
@@ -1300,6 +1424,23 @@ const show2FAModal = ref(false)
       display: flex;
       flex-direction: column;
     }
+    .account-title-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(90deg, #0c89e3 0%, #f7e017 100%);
+      padding: 0 38px;
+      border-radius: 32px 32px 0 0;
+      min-height: 64px;
+      box-shadow: 0 2px 16px #0c89e322;
+    }
+    .account-title {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #23272e;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 8px #0c89e322;
+    }
     .account-main-full {
       display: flex;
       flex-direction: row;
@@ -1307,17 +1448,20 @@ const show2FAModal = ref(false)
       min-height: 0;
       flex: 1;
       width: 100%;
+      position: relative;
     }
     .sidebar-nav {
-      width: 260px;
+      width: 240px;
       background: linear-gradient(120deg, #e3f2fd 0%, #f5f7fa 100%);
       border-radius: 32px 0 0 32px;
       box-shadow: 2px 0 12px #0c89e322;
-      padding: 38px 0 18px 0;
+      padding: 24px 0 18px 0;
       min-height: 72vh;
       display: flex;
       flex-direction: column;
       align-items: stretch;
+      z-index: 10;
+      transition: left 0.3s;
     }
     .sidebar-title {
       font-weight: 900;
@@ -1331,23 +1475,15 @@ const show2FAModal = ref(false)
       padding: 0;
       margin: 0 0 18px 0;
     }
-    .account-status {
-      background: greenyellow;
-      border-radius: 18px;
-      box-shadow: 0 4px 24px #0c89e322;
-      padding: 24px 32px;
-      margin-top: 24px;
-      width: 100%;
-    }
     .sidebar-list li {
-      padding: 18px 32px;
+      padding: 16px 24px;
       cursor: pointer;
       color: #23272e;
       font-weight: 700;
       border-left: 6px solid transparent;
       border-radius: 12px 0 0 12px;
       margin-bottom: 8px;
-      font-size: 1.15rem;
+      font-size: 1.08rem;
       display: flex;
       align-items: center;
       gap: 16px;
@@ -1360,15 +1496,15 @@ const show2FAModal = ref(false)
       font-weight: 900;
     }
     .sidebar-icon {
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     .account-content-full {
       flex: 1;
-      padding: 48px 64px;
+      padding: 32px 16px;
       min-width: 0;
       display: flex;
       flex-direction: column;
@@ -1376,364 +1512,246 @@ const show2FAModal = ref(false)
       justify-content: flex-start;
       background: transparent;
       border-radius: 0 32px 32px 0;
+      overflow-x: hidden;
     }
-    .willkommen-text {
-      text-align: center;
-      margin: 32px 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(120deg, #e3f2fd 0%, #f7e017 100%);
-      border-radius: 24px;
-      box-shadow: 0 4px 24px #0c89e322;
-      padding: 32px 18px;
-      animation: fadeInModal 0.5s;
-    }
-    .account-title-bar {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: linear-gradient(90deg, #0c89e3 0%, #f7e017 100%);
-      padding: 0 38px;
-      border-radius: 32px 32px 0 0;
-      min-height: 84px;
-      box-shadow: 0 2px 16px #0c89e322;
-    }
-    .account-title {
-      font-size: 2.5rem;
-      font-weight: 900;
-      color: #23272e;
-      letter-spacing: 0.5px;
-      text-shadow: 0 2px 8px #0c89e322;
-    }
-    .auth-card {
-      padding: 38px 32px 32px 32px;
-      background: #fff;
-      border-radius: 0 0 32px 32px;
-      box-shadow: 0 2px 16px #0c89e322;
-      max-width: 420px;
-      margin: 0 auto 32px auto;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .login-hint {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: 18px;
-      padding-bottom: 8px;
-    }
-    .login-hint-title {
-      font-size: 1.35rem;
-      font-weight: 900;
-      color: #0c89e3;
-      margin-bottom: 2px;
-    }
-    .login-hint-desc {
-      font-size: 1.05rem;
-      color: #23272e;
-      opacity: 0.85;
-      text-align: center;
-    }
-    .login-form {
-      margin-top: 0;
-    }
-    .fake-change-email-btn {
-      background: none;
-      border: none;
-      color: #0c89e3;
-      font-size: 1.08rem;
-      cursor: not-allowed;
-      text-decoration: underline;
-      margin-top: 12px;
-      position: relative;
-      pointer-events: auto;
-    }
-    .fake-change-email-btn:hover {
-      color: #23272e;
-    }
-    .login-or {
-      text-align: center;
-      color: #bdbdbd;
-      font-size: 1.08rem;
-      margin: 8px 0 8px 0;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-    }
-    .login-btn {
-      margin-bottom: 0;
-    }
-    .login-google-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 0;
-    }
-    .google-logo-img {
-      width: 26px;
-      height: 26px;
-      vertical-align: middle;
-      margin-right: 8px;
-    }
-    .forgot-btn {
-      margin-top: 8px;
-      text-align: right;
-    }
-    .tabs {
-      display: flex;
-      gap: 18px;
-      margin-bottom: 24px;
-    }
-    .tabs button {
-      flex: 1;
-      padding: 16px 0;
-      background: #e3f2fd;
-      color: #0c89e3;
-      border: none;
-      border-radius: 12px 12px 0 0;
-      font-weight: 900;
-      font-size: 1.18rem;
-      cursor: pointer;
-      transition: background 0.18s, color 0.18s;
-      box-shadow: 0 2px 8px #0c89e322;
-    }
-    .delete-account-btn
-    {
-      background: #ef4444;
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      padding: 14px 0;
-      font-weight: 900;
-      font-size: 1.15rem;
-      cursor: pointer;
-      margin-bottom: 8px;
-      transition: background 0.18s, color 0.18s, transform 0.18s;
-      box-shadow: 0 2px 8px #ef444422;
-      /* Fix: Use correct CSS for hover state */
-      &:hover {
-        background: #b91c1c;
+    @media (max-width: 900px) {
+      .account-main-full {
+        flex-direction: column;
+      }
+      .sidebar-nav {
+        position: fixed;
+        left: -100vw;
+        top: 0;
+        height: 100vh;
+        width: 80vw;
+        max-width: 320px;
+        border-radius: 0 32px 32px 0;
+        box-shadow: 4px 0 24px #0c89e322;
+        transition: left 0.3s;
+        background: #fff;
+      }
+      .sidebar-nav.sidebar-mobile {
+        left: 0;
+      }
+      .sidebar-toggle {
+        position: fixed;
+        left: 18px;
+        top: 18px;
+        z-index: 200;
+        background: #0c89e3;
+        border: none;
+        border-radius: 8px;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         color: #fff;
-        transform: scale(1.04);
+        font-size: 2rem;
+        box-shadow: 0 2px 8px #0c89e322;
       }
     }
-    .tabs button.active {
-      background: linear-gradient(90deg, #0c89e3 0%, #f7e017 100%);
-      color: #fff;
-      box-shadow: 0 2px 12px #0c89e322;
+    @media (max-width: 600px) {
+      .account-title {
+        font-size: 1.2rem;
+      }
+      .account-content-full {
+        padding: 8px 2vw;
+      }
+      .sidebar-nav {
+        width: 90vw;
+        max-width: 100vw;
+        padding: 12px 0;
+      }
     }
-    .form {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-    .form-row {
-      margin-bottom: 12px;
-    }
-    .form input[type="email"], .form input[type="password"] {
-      padding: 14px 16px;
-      border-radius: 10px;
-      border: 1.5px solid #dbeafe;
-      background: #f5f7fa;
-      color: #23272e;
-      font-size: 1.08rem;
-      box-sizing: border-box;
-      transition: border 0.18s;
-    }
-    .form input:focus {
-      border: 1.5px solid #0c89e3;
-      outline: none;
-    }
-    .primary-btn {
-      background: linear-gradient(90deg, #0c89e3 0%, #f7e017 100%);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      padding: 14px 0;
-      font-weight: 900;
-      font-size: 1.15rem;
-      cursor: pointer;
-      margin-bottom: 8px;
-      transition: background 0.18s, color 0.18s, transform 0.18s;
-      box-shadow: 0 2px 8px #0c89e322;
-    }
-    .primary-btn:hover {
-      background: linear-gradient(90deg, #f7e017 0%, #0c89e3 100%);
-      color: #23272e;
-      transform: scale(1.04);
-    }
-    .google-btn {
-      background: #ffffff;
-      color: #23272e;
-      border: none;
-      border-radius: 10px;
-      padding: 14px 0;
-      font-weight: 900;
-      font-size: 1.15rem;
-      cursor: pointer;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      transition: background 0.18s, color 0.18s, transform 0.18s;
-      box-shadow: 0 2px 8px #0c89e322;
-    }
-    .google-btn:hover {
-      background: #357ae8;
-    }
-    .google-logo {
-      width: 26px;
-      height: 26px;
-      background: url('https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg') no-repeat center center;
-      background-size: contain;
-      display: inline-block;
-    }
-    .link-btn {
-      background: none;
-      color: #0c89e3;
-      border: none;
-      font-size: 1.08rem;
-      cursor: pointer;
-      text-decoration: underline;
-      margin-bottom: 10px;
-    }
-    .error-popup {
-      background: #ef4444;
-      color: #fff;
-      padding: 12px;
-      border-radius: 10px;
-      font-weight: 900;
-      margin-top: 10px;
-      text-align: center;
-      box-shadow: 0 2px 8px #ef444422;
-    }
-    .info-popup {
-      background: #0c89e3;
-      color: #fff;
-      padding: 12px;
-      border-radius: 10px;
-      font-weight: 900;
-      margin-top: 10px;
-      text-align: center;
-      box-shadow: 0 2px 8px #0c89e322;
-    }
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(44, 62, 80, 0.18);
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    /* Improved password reset modal styling */
-    .password-reset-modal {
-      background: linear-gradient(120deg, #f5f7fa 0%, #e3f2fd 100%);
-      border-radius: 18px;
-      box-shadow: 0 8px 32px #0c89e322;
-      padding: 38px 32px 28px 32px;
-      min-width: 320px;
-      max-width: 420px;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      animation: fadeInModal 0.3s;
-    }
-
-    .password-reset-modal input[type="email"] {
-      padding: 14px 16px;
-      border-radius: 10px;
-      border: 1.5px solid #dbeafe;
-      background: #f5f7fa;
-      color: #23272e;
-      font-size: 1.08rem;
-      margin-bottom: 16px;
-      transition: border 0.18s;
-    }
-
-    .password-reset-modal input[type="email"]:focus {
-      border: 1.5px solid #0c89e3;
-      outline: none;
-    }
-
-    .password-reset-modal .primary-btn {
-      background: linear-gradient(90deg, #0c89e3 0%, #f7e017 100%);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      padding: 14px 0;
-      font-weight: 900;
-      font-size: 1.08rem;
-      cursor: pointer;
-      margin-bottom: 10px;
-      transition: background 0.18s, color 0.18s, transform 0.18s;
-      box-shadow: 0 2px 8px #0c89e322;
-    }
-
-    .password-reset-modal .primary-btn:hover {
-      background: linear-gradient(90deg, #f7e017 0%, #0c89e3 100%);
-      color: #23272e;
-      transform: scale(1.04);
-    }
-
-    .password-reset-modal .modal-btn.cancel {
-      background: #e5e7eb;
-      color: #0c89e3;
-      border: none;
-      border-radius: 10px;
-      padding: 14px 0;
-      font-weight: 900;
-      font-size: 1.08rem;
-      cursor: pointer;
-      margin-top: 10px;
-      transition: background 0.18s, color 0.18s, transform 0.18s;
-    }
-
-    .password-reset-modal .modal-btn.cancel:hover {
-      background: #0c89e3;
-      color: #fff;
-    }
-
-    @keyframes fadeInModal {
-      from { opacity: 0; transform: translateY(40px);}
-      to { opacity: 1; transform: translateY(0);}
-    }
-    .modal-card {
-      background: #fff;
-      border-radius: 18px;
-      box-shadow: 0 8px 32px #0c89e322;
-      padding: 38px 32px 28px 32px;
-      min-width: 320px;
-      max-width: 420px;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .modal-title {
-      font-size: 1.3rem;
-      font-weight: 900;
-      color: #0c89e3;
-      margin-bottom: 18px;
-    }
-    .modal-btn {
-      background: linear-gradient(90deg, #0c89e3 0%, #f7e017 100%);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      padding: 14px 0;
-      font-weight: 900;
-      font-size: 1.08rem;
-      cursor: pointer;
-      margin-top: 10px;
-      transition: background 0.18s, color 0.18s, transform 0.18s;
-      box-shadow: 0 2px 8px #0c89e322;
-    }
-    .modal-btn:hover {
-      background: linear-gradient(90deg, #f7e017 0%, #0c89e3 100%);
-      color: #23272e;
-      transform: scale(1.04);
-    }
+    /* Card, Button, Modal, etc. - make sure all have min-width:0 and max-width:100% for mobile */
+.nickname-container, .email-container, .account-status-box, .telefonnummer-box, .password-container, .willkommen-text, .account-management-section {
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.primary-btn, .modal-btn, .delete-account-btn {
+  width: 100%;
+  max-width: 320px;
+  min-width: 0;
+  font-size: 1.08rem;
+  padding: 14px 0;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  transition: background 0.18s, color 0.18s, transform 0.18s;
+  box-shadow: 0 2px 8px #0c89e322;
+}
+.primary-btn:hover, .modal-btn:hover, .delete-account-btn:hover {
+  background: linear-gradient(90deg, #f7e017 0%, #0c89e3 100%);
+  color: #23272e;
+  transform: scale(1.04);
+}
+input, select, textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1.5px solid #dbeafe;
+  padding: 12px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+input:focus, select:focus, textarea:focus {
+  border: 1.5px solid #0c89e3;
+  outline: none;
+}
+.willkommen-text {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 16px 0;
+  padding: 24px 12px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #e3f2fd 0%, #f7e017 100%);
+  box-shadow: 0 2px 8px #0c89e322;
+  text-align: center;
+}
+.notification-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px #0c89e322;
+  margin-bottom: 18px;
+  padding: 18px 22px 14px 22px;
+  transition: box-shadow 0.18s, background 0.18s;
+  border-left: 6px solid #0c89e3;
+  position: relative;
+}
+.notification-card.read {
+  opacity: 0.7;
+  background: #f3f4f6;
+}
+.notification-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 2px;
+}
+.notification-icon {
+  font-size: 2rem;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+.notification-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.notification-title {
+  font-weight: 900;
+  color: #0c89e3;
+  font-size: 1.18rem;
+  white-space: pre-line;
+}
+.notification-unread-badge {
+  background: linear-gradient(90deg, #22c55e 0%, #0c89e3 100%);
+  color: #fff;
+  font-weight: 900;
+  font-size: 0.98rem;
+  border-radius: 8px;
+  padding: 3px 14px;
+  box-shadow: 0 2px 8px #0c89e322;
+  letter-spacing: 0.5px;
+  margin-left: 6px;
+}
+.notification-date {
+  color: #6b7280;
+  font-size: 0.98rem;
+  font-weight: 500;
+  margin-left: 2.6rem;
+  margin-bottom: 2px;
+}
+.notification-message {
+  font-size: 1.08rem;
+  color: #23272e;
+  margin-bottom: 2px;
+  margin-left: 2.6rem;
+  white-space: pre-line;
+}
+.notification-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.98rem;
+  color: #6b7280;
+  font-style: italic;
+  margin-left: 2.6rem;
+  margin-top: 2px;
+  gap: 12px;
+}
+.notification-author {
+  font-weight: 700;
+}
+.notification-footer {
+  margin-left: 18px;
+}
+@media (max-width: 600px) {
+  .account-notifications-section {
+    max-width: 100vw;
+    padding: 0 2vw 32px 2vw;
+  }
+  .notification-card {
+    padding: 16px 8px 14px 12px;
+  }
+  .notification-title {
+    font-size: 1.05rem;
+  }
+  .notification-icon {
+    font-size: 1.3rem;
+  }
+  .notification-date,
+  .notification-message,
+  .notification-meta {
+    margin-left: 1.6rem;
+  }
+}
+.sidebar-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(44, 62, 80, 0.18);
+  z-index: 99;
+}
+.sidebar-nav {
+  z-index: 100;
+}
+.sidebar-toggle {
+  position: fixed;
+  left: 18px;
+  top: 18px;
+  z-index: 200;
+  background: #0c89e3;
+  border: none;
+  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 2rem;
+  box-shadow: 0 2px 8px #0c89e322;
+}
+@media (max-width: 900px) {
+  .sidebar-nav {
+    position: fixed;
+    left: -100vw;
+    top: 0;
+    height: 100vh;
+    width: 80vw;
+    max-width: 320px;
+    border-radius: 0 32px 32px 0;
+    box-shadow: 4px 0 24px #0c89e322;
+    transition: left 0.3s;
+    background: #fff;
+  }
+  .sidebar-nav.sidebar-mobile {
+    left: 0;
+  }
+}
 </style>
