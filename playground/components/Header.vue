@@ -3,7 +3,7 @@
     <div class="header-title-row">
       <img
         class="logo-img"
-        src="http://91.99.206.192/logo-modified.png"
+        src="/logo.png"
         alt="DeepAI Logo"
       />
       <h1 class="header-title">DeepAI</h1>

@@ -3,4 +3,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   compatibilityDate: 'latest',
   myModule: {},
+  plugins: [
+    { src: '~/plugins/firebase.client.ts', mode: 'client' }
+  ]
 })

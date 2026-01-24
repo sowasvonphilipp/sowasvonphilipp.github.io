@@ -1,7 +1,7 @@
 <template>
     <div class="footer-container">
         <div class="footer-icon">
-            <img src="http://91.99.206.192/logo-modified.png" alt="Logo" width="32" height="32" />
+            <img src="/logo.png" alt="Logo" width="32" height="32" />
         </div>
         <div class="footer-texts">
             <div class="footer-brand-name">
