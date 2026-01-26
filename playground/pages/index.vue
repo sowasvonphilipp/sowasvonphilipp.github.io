@@ -117,9 +117,7 @@
 </script>
 
 <style>
-:root {
-  /* ...existing code... */
-}
+
 
 .visually-hidden {
   position: absolute !important;
